@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using ApiByVibeCoding.Models;
-using System.Text.Json;
+using ApiByVibeCoding.Services;
 
 namespace ApiByVibeCoding.Controllers;
 
@@ -8,79 +8,66 @@ namespace ApiByVibeCoding.Controllers;
 [Route("api/[controller]")]
 public class PostsController : ControllerBase
 {
-    private readonly HttpClient _httpClient;
+    private readonly IPostService _postService;
 
-    public PostsController(HttpClient httpClient)
+    public PostsController(IPostService postService)
     {
-        _httpClient = httpClient;
+        _postService = postService;
     }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Post>>> GetPosts()
     {
-        var response = await _httpClient.GetAsync("https://jsonplaceholder.typicode.com/posts");
-        
-        if (!response.IsSuccessStatusCode)
-            return StatusCode((int)response.StatusCode);
-
-        var json = await response.Content.ReadAsStringAsync();
-        var posts = JsonSerializer.Deserialize<List<Post>>(json, new JsonSerializerOptions
+        try
         {
-            PropertyNameCaseInsensitive = true
-        });
-
-        return Ok(posts);
+            var posts = await _postService.GetPostsAsync();
+            return Ok(posts);
+        }
+        catch (HttpRequestException)
+        {
+            return StatusCode(500);
+        }
     }
 
     [HttpPost]
     public async Task<ActionResult<Post>> CreatePost([FromBody] Post post)
     {
-        var json = JsonSerializer.Serialize(post);
-        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-        
-        var response = await _httpClient.PostAsync("https://jsonplaceholder.typicode.com/posts", content);
-        
-        if (!response.IsSuccessStatusCode)
-            return StatusCode((int)response.StatusCode);
-
-        var responseJson = await response.Content.ReadAsStringAsync();
-        var createdPost = JsonSerializer.Deserialize<Post>(responseJson, new JsonSerializerOptions
+        try
         {
-            PropertyNameCaseInsensitive = true
-        });
-
-        return Ok(createdPost);
+            var createdPost = await _postService.CreatePostAsync(post);
+            return Ok(createdPost);
+        }
+        catch (HttpRequestException)
+        {
+            return StatusCode(500);
+        }
     }
 
     [HttpPut("{id}")]
     public async Task<ActionResult<Post>> UpdatePost(int id, [FromBody] Post post)
     {
-        post.Id = id;
-        var json = JsonSerializer.Serialize(post);
-        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-        
-        var response = await _httpClient.PutAsync($"https://jsonplaceholder.typicode.com/posts/{id}", content);
-        
-        if (!response.IsSuccessStatusCode)
-            return StatusCode((int)response.StatusCode);
-
-        var responseJson = await response.Content.ReadAsStringAsync();
-        var updatedPost = JsonSerializer.Deserialize<Post>(responseJson, new JsonSerializerOptions
+        try
         {
-            PropertyNameCaseInsensitive = true
-        });
-
-        return Ok(updatedPost);
+            var updatedPost = await _postService.UpdatePostAsync(id, post);
+            return Ok(updatedPost);
+        }
+        catch (HttpRequestException)
+        {
+            return StatusCode(500);
+        }
     }
 
     [HttpDelete("{id}")]
     public async Task<ActionResult> DeletePost(int id)
     {
-        var response = await _httpClient.DeleteAsync($"https://jsonplaceholder.typicode.com/posts/{id}");
-        
-        if (!response.IsSuccessStatusCode)
-            return StatusCode((int)response.StatusCode);
-
-        return NoContent();
+        try
+        {
+            await _postService.DeletePostAsync(id);
+            return NoContent();
+        }
+        catch (HttpRequestException)
+        {
+            return StatusCode(500);
+        }
     }
 }
