@@ -1,65 +1,34 @@
 using ApiByVibeCoding.Models;
-using System.Text.Json;
+using ApiByVibeCoding.Repositories;
 
 namespace ApiByVibeCoding.Services;
 
 public class CommentService : ICommentService
 {
-    private readonly HttpClient _httpClient;
-    private const string BaseUrl = "https://jsonplaceholder.typicode.com/comments";
+    private readonly ICommentRepository _commentRepository;
 
-    public CommentService(HttpClient httpClient)
+    public CommentService(ICommentRepository commentRepository)
     {
-        _httpClient = httpClient;
+        _commentRepository = commentRepository;
     }
 
     public async Task<IEnumerable<Comment>> GetCommentsAsync()
     {
-        var response = await _httpClient.GetAsync(BaseUrl);
-        response.EnsureSuccessStatusCode();
-
-        var json = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<List<Comment>>(json, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        }) ?? new List<Comment>();
+        return await _commentRepository.GetAllAsync();
     }
 
     public async Task<Comment?> CreateCommentAsync(Comment comment)
     {
-        var json = JsonSerializer.Serialize(comment);
-        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-        
-        var response = await _httpClient.PostAsync(BaseUrl, content);
-        response.EnsureSuccessStatusCode();
-
-        var responseJson = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<Comment>(responseJson, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        });
+        return await _commentRepository.CreateAsync(comment);
     }
 
     public async Task<Comment?> UpdateCommentAsync(int id, Comment comment)
     {
-        comment.Id = id;
-        var json = JsonSerializer.Serialize(comment);
-        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-        
-        var response = await _httpClient.PutAsync($"{BaseUrl}/{id}", content);
-        response.EnsureSuccessStatusCode();
-
-        var responseJson = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<Comment>(responseJson, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        });
+        return await _commentRepository.UpdateAsync(id, comment);
     }
 
     public async Task<bool> DeleteCommentAsync(int id)
     {
-        var response = await _httpClient.DeleteAsync($"{BaseUrl}/{id}");
-        response.EnsureSuccessStatusCode();
-        return true;
+        return await _commentRepository.DeleteAsync(id);
     }
 }
