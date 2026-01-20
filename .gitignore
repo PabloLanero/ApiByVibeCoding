@@ -1,10 +1,7 @@
-bin/
-obj/
+bin
+obj
 *.user
 *.suo
-.vs/
-.vscode/
+.vs
+.vscode
 *.log
-appsettings.*.json
-!appsettings.json
-!appsettings.Development.json
